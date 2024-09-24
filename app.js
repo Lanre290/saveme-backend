@@ -5,6 +5,10 @@ const path = require('path');
 
 const app = express();
 
+app.use(cors({
+    origin: 'https://your-frontend-domain.com', // Allow only this domain
+}));
+
 // Endpoint to download YouTube video
 app.get('/download', async (req, res) => {
   let videoUrl = req.query.url;  // YouTube video ID from the query parameter
