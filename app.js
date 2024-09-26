@@ -90,7 +90,6 @@ app.get('/fetchformats', async (req, res) => {
 
       const info = await ytdl.getInfo(videoUrl);
       const formats = info.formats;
-      // let res = JSON.parse(JSON.stringify(formats));
 
       res.json(formats);
       res.end();
