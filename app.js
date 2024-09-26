@@ -8,16 +8,19 @@ require('dotenv').config();
 const app = express();
 
 const frontend_url = process.env.FRONTEND_URL;
+console.log(frontend_url);
 
 app.use(cors({
     origin: frontend_url, 
     methods: ['GET'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    credentials: true,  // Allow credentials
+    allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 // Endpoint to download YouTube video
 app.get('/download', async (req, res) => {
-  let videoUrl = req.query.url;  // YouTube video ID from the query parameter
+  let videoUrl = req.query.url;
+  let format = req.query.format;
 
   if (!videoUrl) {
     return res.status(400).send('Video ID is required.');
@@ -36,18 +39,18 @@ app.get('/download', async (req, res) => {
     console.log('pre stage')
     const videoInfo = await ytdl.getInfo(videoUrl);
     const videoTitle = videoInfo.videoDetails.title;
-    const safeTitle = videoTitle.replace(/[^\w\s]/gi, '');  // Make filename safe
-    const filePath = path.join(__dirname, `${safeTitle}.mp4`);
+    const safeTitle = videoTitle.replace(/[^\w\s]/gi, '');
+    const filePath = path.join(__dirname, `${safeTitle}.${format}`);
 
     // Stream the video to a file on the server
-    const videoStream = ytdl(videoUrl, { format: 'mp4' });
+    const videoStream = ytdl(videoUrl, { format: format });
     console.log('stage 1')
 
     videoStream.pipe(fs.createWriteStream(filePath))
       .on('finish', () => {
-    console.log('stage 2')
+      console.log('stage 2')
         // After the file is saved, send it to the client for download
-        res.download(filePath, `${safeTitle}.mp4`, (err) => {
+        res.download(filePath, `${safeTitle}.${format}`, (err) => {
           console.log('stage 3')
           if (err) {
             console.error(err);
@@ -80,15 +83,20 @@ app.get('/fetchformats', async (req, res) => {
       return res.status(400).send('Video ID is required.');
     }
 
+    console.log('start!')
+
     // Construct the full YouTube URL from the video ID
     videoUrl = `https://www.youtube.com/watch?v=${videoUrl}`;
 
       const info = await ytdl.getInfo(videoUrl);
       const formats = info.formats;
+      // let res = JSON.parse(JSON.stringify(formats));
 
-      return formats;
+      res.json(formats);
+      res.end();
   } catch (error) {
       console.error('Error fetching video info:', error);
+      return res.status(500).send('Failed to fetch video info');
   }
 });
 
