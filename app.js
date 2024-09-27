@@ -21,6 +21,7 @@ app.use(cors({
 app.get('/download', async (req, res) => {
   let videoUrl = req.query.url;
   let format = req.query.format;
+  let quality = req.query.quality;
 
   if (!videoUrl) {
     return res.status(400).send('Video ID is required.');
@@ -43,7 +44,7 @@ app.get('/download', async (req, res) => {
     const filePath = path.join(__dirname, `${safeTitle}.${format}`);
 
     // Stream the video to a file on the server
-    const videoStream = ytdl(videoUrl, { format: format });
+    const videoStream = ytdl(videoUrl, { format: format, quality: quality, highWaterMark: 1 << 25});
     console.log('stage 1')
 
     videoStream.pipe(fs.createWriteStream(filePath))
@@ -64,10 +65,14 @@ app.get('/download', async (req, res) => {
           });
         });
       })
-      .on('error', (err) => {
-        console.error('Error while downloading video:', err);
-        res.status(500).send('Error occurred while downloading the video.');
+      .on('progress', () => {
+        console.log('progressing');
       });
+      // .on('error', (err) => {
+      //   console.error('Error while downloading video:', err);
+      //   res.status(500).send('Error occurred while downloading the video.');
+      // });
+      
 
   } catch (error) {
     console.error(error);
